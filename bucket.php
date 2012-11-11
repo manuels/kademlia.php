@@ -19,11 +19,11 @@ class Bucket implements \JsonSerializable {
   }
 
 
-  public function add($new_node, $ping = NULL) {
+  public function addNode($new_node, $ping = NULL) {
     $settings = $this->settings;
 
     if((!$new_node->isValid()) || ($new_node->idBin() === $settings->own_node_id))
-      return;
+      return false;
 
     $found = $this->positionOfNodeId($new_node);
     if($found !== FALSE) {
@@ -36,17 +36,24 @@ class Bucket implements \JsonSerializable {
         unset($this->nodes[$pos]);
         array_unshift($this->nodes, $same_node);
       }
-      return;
+      return false;
     }
 
     if(count($this->nodes) < $settings->bucket_size) {
       array_unshift($this->nodes, $new_node);
-      return;
+      return false;
     }
 
     $last_node = end($this->nodes);
-    $task = ($ping === NULL ? new Ping($last_node) : $ping);
+    $task = ($ping === NULL ? new Ping($settings, $last_node) : $ping);
     $task->failed(get_class($this), 'replaceNode', $new_node, $last_node->idBin());
+
+    return true;
+  }
+
+
+  public function toNodeList() {
+    return new NodeList($this->nodes);
   }
 
 

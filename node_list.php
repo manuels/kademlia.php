@@ -3,7 +3,7 @@
 namespace Kademlia;
 
 class NodeList {
-  function __construct($node_array) {
+  function __construct($node_array = []) {
     $this->node_array = $node_array;
   }
 
@@ -16,6 +16,30 @@ class NodeList {
         return true;
     }
     return false;
+  }
+
+
+  public function addNodeList($node_list) {
+    return $this->addNodeArray($node_list->toArray());
+  }
+
+
+  public function addNodeArray($node_array) {
+    foreach($node_array as $node) {
+      $this->addNode($node);
+    }
+  }
+
+
+  public function addNode($new_node) {
+    $found = false;
+    foreach($this->node_array as $node)
+      if($node->idBin() === $new_node->idBin()) {
+        $found = true;
+        break;
+      }
+    if(!$found)
+      array_push($this->node_array, $new_node);
   }
 
 
@@ -44,31 +68,65 @@ class NodeList {
   }
 
 
-  public function groupByProtocols() {
+  public function groupByProtocols($settings) {
     $groups = [];
 
-    # TODO: write a test
-    foreach($this->nodes as $n) {
-      $prot_id = $n->favouriteProtocolId();
-
+    foreach($this->node_array as $node) {
+      $prot_id = $node->favoriteProtocolId($settings);
       if(!isset($groups[$prot_id]))
         $groups[$prot_id] = [];
-      array_push($groups[$prot_id], $n);
+      array_push($groups[$prot_id], $node);
     }
+
+    foreach($groups as $protocol_id => $node_array) {
+      $groups[$protocol_id] = new NodeList($node_array);
+    }
+
     return $groups;
   }
 
 
-  public function sendFindNodeRequest($settings, $node_id) {
-    $protocol_groups = $this->groupByProtocols();
+  public function sendFindNodeRequest(&$settings, $node_id) {
+    return $this->sendFindRequest(Find\NODE, $settings, $node_id);
+  }
+
+
+  public function sendFindValueRequest(&$settings, $node_id) {
+    return $this->sendFindRequest(Find\VALUE, $settings, $node_id);
+  }
+
+
+  public function sendFindRequest($type, &$settings, $node_id) {
+    $protocol_groups = $this->groupByProtocols($settings);
+    unset($protocol_groups['']);
+
+    $task_group = new TaskGroup($settings);
+    foreach($protocol_groups as $prot_id => $node_list) {
+      $protocol = $settings->instantiateProtocolById($prot_id);
+
+      $task = $protocol->sendFindRequest($type, $node_id, $node_list);
+      $task_group->add($task);
+    }
+    return $task_group;
+  }
+
+
+  public function sendStoreRequest($settings, $key_id, $value) {
+    $protocol_groups = $this->groupByProtocols($settings);
+    unset($protocol_groups['']);
 
     $task_group = new TaskGroup($settings);
     foreach($protocol_groups as $prot_id => $nodes) {
-      $protocol = Protocol::instantiateByProtocolId($settings, $prot_id);
-      $task = $protocol->sendFindNodeRequest($node_id);
-      $task_group->add($task_group);
+      $protocol = &$settings->instantiateProtocolById($prot_id);
+      $task = $protocol->sendStoreRequest($key_id, $value);
+      $task_group->add($task);
     }
     return $task_group;
+  }
+
+
+  public function size() {
+    return count($this->node_array);
   }
 
 
@@ -83,7 +141,9 @@ class NodeList {
     };
 
     usort($this->node_array, $cmp);
-    return array_slice($this->node_array, 0, $count);
+    $nodes = array_slice($this->node_array, 0, $count);
+
+    return new NodeList($nodes);
   }
 }
 

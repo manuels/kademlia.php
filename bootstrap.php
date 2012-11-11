@@ -10,34 +10,66 @@ class Bootstrap extends Task {
 
     $this->settings = &$settings;
     $this->bootstrap_nodes = $bootstrap_nodes;
-    $this->query_node_id = Node::randomNodeId();
+    if($settings->own_node_id === '')
+      $settings->own_node_id = Node::randomNodeId();
   }
 
 
   public function enqueueSelf() {
-    var_dump('Bootstrap::enqueueSelf');
-    $this->find_node_task = new FindNode($this->settings, $this->query_node_id, $this->bootstrap_nodes);
+    $this->find_node_task = new FindNode($this->settings, $this->settings->own_node_id, $this->bootstrap_nodes);
+    print "Bootstrap::enqueueSelf\n";
     $this->find_node_task->enqueue()->done([$this, 'perform']);
+
+    return $this;
   }
 
 
-  public function perform($closest_nodes_list = NULL) {
-    if($closest_nodes_list === NULL)
-      $closest_nodes_list = $this->bootstrap_nodes;
+  public function perform($results) {
+    $node_list = new NodeList([]);
+    print "Bootstrap::Perfrom\n";
 
-    if($closest_nodes_list->containsNodeId($this->query_node_id)) {
+    foreach($results as $nodes) {
+      $node_list->addNodeList($nodes);
+    }
+
+    if($node_list->containsNodeId($this->settings->own_node_id)) {
+      $this->settings->own_node_id = Node::randomNodeId();
+
       $this->find_node_task = new Bootstrap($this->settings, $this->bootstrap_nodes);
-      $this->find_node_task->enqueue()->success([$this, 'emitSuccess']);
+      print "Bootstrap::Perfrom A\n";
+      $this->find_node_task->enqueue()->done([$this, 'emitSuccess']);
     }
     else {
-      $this->settings->own_node_id = $this->query_node_id;
-      $this->emitSuccess($this->query_node_id);
+      print "Bootstrap::Perfrom B\n";
+      $this->emitSuccess($this->settings->own_node_id);
     }
   }
 
 
   public function emitSuccess($own_node_id) {
+    $this->settings->own_node_id = $own_node_id;
     $this->emit('success', $own_node_id);
+
+    $kbuckets_size = $this->settings->kbuckets->toNodeList()->size();
+    print Node::binId2hex($this->settings->own_node_id)." is done with bootstrapping and populating it's address (kbuckets: ".$kbuckets_size.")\n";
+
+    $z = 0;
+    for($i = 0; $i < N/8; $i++) {
+      for($j = 0; $j < 8; $j++) {
+        $node_id = $own_node_id;
+
+        $byte = $node_id[$i];
+        $byte ^= chr(1 << $j);
+        $node_id[$i] = $byte;
+
+        $task = new FindNode($this->settings, $node_id);
+        $task->enqueue();
+
+        $z++;
+        if($z == 2)
+          return; ##################################################
+      }
+    }
   }
 }
 

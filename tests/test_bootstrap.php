@@ -21,7 +21,7 @@ class TestKademliaBootstrap extends UnitTestCase {
     $bootstrap = new Kademlia\Bootstrap($settings, $this->node_list);
 
     $callback = new TestCallback;
-    $bootstrap->enqueue()->done([$callback, 'callMe']);
+    $bootstrap->enqueue()->allDone([$callback, 'callMe']);
 
     var_dump($bootstrap->find_node_task);
     $bootstrap->find_node_task->emit('success', Kademlia\Node::randomNodeId());

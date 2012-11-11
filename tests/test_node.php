@@ -16,6 +16,14 @@ class TestKademliaNode extends UnitTestCase {
   }
 
 
+  public function testBinHexIdConversion() {
+    $id = str_repeat('AA', N/8);
+    
+    $this->assertEqual(strtolower($id),
+                       strtolower(Kademlia\Node::binId2hex(Kademlia\Node::hexId2bin($id))));
+  }
+
+
   public function testNormalizeNodeId() {
     $id_a = str_repeat('AA', N/8);
     $id_b = str_repeat('aa', N/8);
@@ -41,7 +49,7 @@ class TestKademliaNode extends UnitTestCase {
     $settings = new Kademlia\Settings;
     $protocol = $this->http_node->favoriteProtocol($settings);
 
-    $this->assertEqual(get_class($protocol), 'Kademlia\Http');
+    $this->assertEqual(get_class($protocol), 'Kademlia\Http\Protocol');
   }
 
 

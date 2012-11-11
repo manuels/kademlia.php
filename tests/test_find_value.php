@@ -1,8 +1,8 @@
 <?php
 
-class TestKademliaFindNode extends UnitTestCase {
+class TestKademliaFindValue extends UnitTestCase {
   function __construct() {
-    parent::__construct('Kademlia FindNode Test');
+    parent::__construct('Kademlia FindValue Test');
   }
 
 
@@ -12,22 +12,18 @@ class TestKademliaFindNode extends UnitTestCase {
     $callback_done = &new TestCallback;
     $callback_success = &new TestCallback;
 
-    $task = new Kademlia\FindNode($settings, Kademlia\Node::randomNodeId(), new Kademlia\NodeList([]));
+    $task = new Kademlia\FindValue($settings, Kademlia\Node::randomNodeId(), new Kademlia\NodeList([]));
     $task->done([$callback_done, 'callme']);
     $task->done([$callback_success, 'callme']);
 
-    $found_node = KademliaTestFactory::constructNode();
-    $task->found_nodes->addNode($found_node);
-
-    $task->perform([['node_list' => new Kademlia\NodeList([$found_node])]]);
-    $task->perform([['node_list' => new Kademlia\NodeList([$found_node])]]);
+    $task->perform(new Kademlia\NodeList([]));
 
     $callback_done->expectOnce('callme');
     $callback_success->expectNever('callme');
   }
 
 
-  public function testEmitSuccessWhenNodesFound() {
+  public function testEmitSuccessWhenValueFound() {
     $settings = new Kademlia\Settings;
 
     $callback_done = &new TestCallback;
@@ -35,18 +31,18 @@ class TestKademliaFindNode extends UnitTestCase {
 
     $node = KademliaTestFactory::constructNode();
 
-    $task = new Kademlia\FindNode($settings, $node->idBin(), new Kademlia\NodeList([]));
+    $task = new Kademlia\FindValue($settings, $node->idBin(), new Kademlia\NodeList([]));
     $task->done([$callback_done, 'callme']);
     $task->done([$callback_success, 'callme']);
 
-    $task->perform([['node_list' => new Kademlia\NodeList([$node])]]);
+    $task->perform(new Kademlia\NodeList([$node]), ['abc'=>'d']);
 
     $callback_success->expectOnce('callme');
     $callback_done->expectOnce('callme');
   }
 
 
-  public function testCallsFindNodeForNodes() {
+  public function testCallsFindValueForNodes() {
     $mock_protocol = &new MockProtocol();
     $mock_task = &new MockTask();
     $mock_settings = &new MockSettings();
@@ -69,10 +65,10 @@ class TestKademliaFindNode extends UnitTestCase {
     $needle_id = str_repeat('00', N/8);
     $needle_id = Kademlia\Node::hexId2bin($needle_id);
 
-    $task = new Kademlia\FindNode($mock_settings, $needle_id, new Kademlia\NodeList($mock_nodes));
+    $task = new Kademlia\FindValue($mock_settings, $needle_id, new Kademlia\NodeList($mock_nodes));
     $task->enqueue();
 
-    $mock_protocol->expectOnce('sendFindRequest', [Kademlia\Find::NODE, array_slice($mock_nodes, 0, $mock_settings->alpha)]);
+    $mock_protocol->expectOnce('sendFindRequest', [Kademlia\Find::VALUE, array_slice($mock_nodes, 0, $mock_settings->alpha)]);
   }
 }
 

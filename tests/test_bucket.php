@@ -18,16 +18,16 @@ class TestKademliaBucket extends UnitTestCase {
     $ping_task = &new MockPing();
 
     $first_node = KademliaTestFactory::constructNode();
-    $bucket->add($first_node, $ping_task);
+    $bucket->addNode($first_node, $ping_task);
 
     for($i = 0; $i < ($settings->bucket_size-1); $i++) {
       $node = KademliaTestFactory::constructNode();
-      $bucket->add($node, $ping_task);
+      $bucket->addNode($node, $ping_task);
     }
 
     $another_node = KademliaTestFactory::constructNode();
     $ping_task->expectOnce('failed', ['Kademlia\Bucket', 'replaceNode', $another_node, $first_node->idBin()]);
-    $bucket->add($another_node, $ping_task);
+    $bucket->addNode($another_node, $ping_task);
 
     $this->assertFalse($bucket->positionOfNodeId($another_node));
   }
@@ -38,16 +38,16 @@ class TestKademliaBucket extends UnitTestCase {
     $bucket = new Kademlia\Bucket($settings);
 
     $first_node = KademliaTestFactory::constructNode();
-    $bucket->add($first_node);
+    $bucket->addNode($first_node);
 
     for($i = 0; $i < ($settings->bucket_size-1); $i++) {
       $node = KademliaTestFactory::constructNode();
-      $bucket->add($node);
+      $bucket->addNode($node);
     }
 
     $this->assertNotEqual($bucket->positionOfNodeId($first_node), 0);
 
-    $bucket->add($first_node);
+    $bucket->addNode($first_node);
     $this->assertEqual($bucket->positionOfNodeId($first_node), 0);
   }
 
@@ -58,10 +58,10 @@ class TestKademliaBucket extends UnitTestCase {
     $bucket = new Kademlia\Bucket($settings);
 
     $first_node = KademliaTestFactory::constructNode();
-    $bucket->add($first_node);
+    $bucket->addNode($first_node);
 
     $self_node = KademliaTestFactory::constructNode(['id' => $settings->own_node_id]);
-    $bucket->add($self_node);
+    $bucket->addNode($self_node);
 
     $this->assertEqual($bucket->positionOfNodeId($first_node), 0);
     $this->assertFalse($bucket->positionOfNodeId($self_node));
@@ -74,10 +74,10 @@ class TestKademliaBucket extends UnitTestCase {
     $bucket = new Kademlia\Bucket($settings);
 
     $first_node = KademliaTestFactory::constructNode();
-    $bucket->add($first_node);
+    $bucket->addNode($first_node);
 
     $invalid_node = KademliaTestFactory::constructNode(['id' => 'foobar']);
-    $bucket->add($invalid_node);
+    $bucket->addNode($invalid_node);
 
     $this->assertEqual($bucket->positionOfNodeId($first_node), 0);
     $this->assertFalse($bucket->positionOfNodeId($invalid_node));

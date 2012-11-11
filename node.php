@@ -7,11 +7,17 @@ class Node implements \JsonSerializable {
     $this->hard_host = $hard_host; # IP address as found in layer 3 of packets
     $this->data = $data;
 
-    if(isset($this->data['id']))
-      if(strlen($this->data['id']) === N/8)
+    if(isset($this->data['id'])) {
+      if(strlen($this->data['id']) === N/8) {
         $this->data['binary_id'] = $data['id'];
-      else
+      }
+      else {
         $this->data['binary_id'] = self::hexId2bin($this->data['id']);
+      }
+    }
+
+    if(!isset($this->data['protocols']))
+      $this->data['protocols'] = [];
   }
 
 
@@ -23,8 +29,18 @@ class Node implements \JsonSerializable {
   }
 
 
+  public function protocolInfo($protocol_id) {
+    return $this->data['protocols'][$protocol_id];
+  }
+
+
+  public function supportedProtocols() {
+    return array_keys($this->data['protocols']);
+  }
+
+
   public function favoriteProtocolId($settings) {
-    $protocol_ids = array_intersect(array_keys($this->data['protocols']), $settings->supported_protocols);
+    $protocol_ids = array_intersect($this->supportedProtocols(), array_keys($settings->supported_protocols));
     if(count($protocol_ids) === 0)
       return NULL;
 
@@ -32,12 +48,12 @@ class Node implements \JsonSerializable {
   }
 
 
-  public function favoriteProtocol($settings) {
+  public function favoriteProtocol(&$settings) {
     $protocol_id = $this->favoriteProtocolId($settings);
     if($protocol_id === NULL)
       return NULL;
 
-    return Protocol::instantiateByProtocolId($settings, $protocol_id);
+    return $settings->instantiateProtocolById($protocol_id);
   }
 
 
@@ -51,16 +67,20 @@ class Node implements \JsonSerializable {
     }
 
     $binary_id = '';
-    for($i = 0; $i < N/8; $i++)
-      $binary_id .= chr(hexdec( substr($string_id, 2*$i, 2) ));
+    for($i = 0; $i < N/8; $i++) {
+      $str = substr($string_id, 2*$i, 2);
+      $binary_id .= chr(hexdec( $str ));
+    }
     return $binary_id;
   }
 
 
   static function binId2hex($binary_id) {
     $string_id = '';
-    for($i = 0; $i < N/8; $i++)
-      $string_id .= str_pad( dechex($binary_id[$i]), 2, '0', STR_PAD_LEFT);
+    for($i = 0; $i < N/8; $i++) {
+      $hex = dechex(ord($binary_id[$i]));
+      $string_id .= str_pad( $hex, 2, '0', STR_PAD_LEFT);
+    }
     return $string_id;
   }
 
@@ -124,7 +144,7 @@ class Node implements \JsonSerializable {
   }
 
   public function jsonSerialize() {
-    return $data;
+    return json_encode($this->data);
   }
 }
 
