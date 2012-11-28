@@ -20,11 +20,13 @@ class NodeList {
 
 
   public function addNodeList($node_list) {
+    assert(get_class($node_list) === 'Kademlia\NodeList');
     return $this->addNodeArray($node_list->toArray());
   }
 
 
   public function addNodeArray($node_array) {
+    assert(gettype($node_array) === 'array');
     foreach($node_array as $node) {
       $this->addNode($node);
     }
@@ -32,6 +34,10 @@ class NodeList {
 
 
   public function addNode($new_node) {
+    if(!(get_class($new_node) === 'Kademlia\Node' || get_class($new_node) === 'MockNode')) {
+      assert(false);
+    }
+
     $found = false;
     foreach($this->node_array as $node)
       if($node->idBin() === $new_node->idBin()) {

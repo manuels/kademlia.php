@@ -25,14 +25,13 @@ class Protocol extends \Kademlia\Protocol {
     switch($request['query']['type']) {
       case 'FIND_NODE':
         $needle_id = \Kademlia\Node::hexId2bin($request['query']['node_id']);
-        $response = json_encode($this->createFindNodeResponse($needle_id));
+        $response = @json_encode($this->createFindNodeResponse($needle_id));
         break;
       default:
         $response = '{}';
         break;
     }
 
-    var_dump(\Kademlia\Node::binId2hex($this->settings->own_node_id).' got REQUEST:', $request, 'sending RESPONSE', $response);
     return $response;
   }
 }
@@ -51,14 +50,22 @@ class HttpTask extends \Kademlia\Task {
   public function perform($data) {
     $urls = [];
     foreach($this->recipients_node_list->toArray() as $node) {
-      $str = 'q='.urlencode(json_encode([
+      $str = 'q='.urlencode(@json_encode([
         'id'        => \Kademlia\Node::binId2hex($this->settings->own_node_id),
         'protocols' => $this->settings->supported_protocols,
         'query'     => $data
       ]));
+
       $urls[$str] = $node;
     }
     $responses = $this->download($urls);
+
+    if($this->settings->verbosity > 0) {
+      print \Kademlia\Node::binId2hex($this->settings->own_node_id)." got these responses:\n";
+      foreach($responses as $r)
+        var_dump(json_decode($r['data'], true));
+      print "# end of responses\n";
+    }
 
     foreach($responses as $resp) {
       if($resp['data'] !== NULL)
@@ -103,14 +110,15 @@ class Find extends HttpTask {
 
 
   public function parseNodeList($encoded_result = '{}') {
-    $result = json_decode($encoded_result, false);
+    $result = json_decode($encoded_result, true);
     if($result === NULL)
       $result = [];
 
     $nodes = [];
-    foreach($result as $data) {
+    foreach($result['node_array'] as $data) {
       $n = new \Kademlia\Node($data);
-      array_push($nodes, $n);
+      if($n->isValid())
+        array_push($nodes, $n);
     }
   
     return new \Kademlia\NodeList($nodes);
@@ -131,10 +139,18 @@ class FindNode extends Find {
     $node_list = new \Kademlia\NodeList;
     foreach($results as $res) {
       $nodes = $this->parseNodeList($res['data']);
-      $node_list->addNode($nodes);
+      $node_list->addNodeList($nodes);
     }
 
     $emitted_result = [ 'node_list' => $node_list ];
+
+    if($this->settings->verbosity >= 4) {
+      print \Kademlia\Node::binId2hex($this->settings->own_node_id).": FindNode process found this result\n";
+      var_dump($emitted_result);
+      print \Kademlia\Node::binId2hex($this->settings->own_node_id).": end of FindNode process result\n";
+    }
+
+    $emitted_result[-1] = 'Http::FindNode_result';
     $this->emit('done', $emitted_result);
   }
 }

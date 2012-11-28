@@ -19,6 +19,8 @@ class KBuckets implements \JsonSerializable {
     if(empty($this->settings->own_node_id))
       return;
 
+#    print Node::binId2hex($this->settings->own_node_id)." saw ".$node->idStr()."\n";
+
     $bucket_id = $node->logDistanceTo($this->settings->own_node_id)-1;
     if($bucket_id < 0)
       return;

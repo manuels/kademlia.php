@@ -16,6 +16,7 @@ class FindValue extends Find {
     $task = $closest_nodes->sendStoreRequest($this->settings, $this->needle_id, current($new_values));
   }
 
+
   public function idFound($node_list, $new_values) {
     if(count($new_values) > 0) {
       $this->emit('success', $this->values);

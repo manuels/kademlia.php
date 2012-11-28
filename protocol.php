@@ -10,9 +10,6 @@ class Protocol {
 
   public function createFindNodeResponse($needle_id) {
     $nodes = $this->settings->kbuckets->toNodeList()->closestNodes($needle_id, $this->settings->bucket_size);
-    print "createFindNodeResponse\n";
-    foreach($nodes->toArray() as $n)
-      print " ".$n->idStr()."\n";
     return $nodes;
   }
 

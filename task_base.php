@@ -48,7 +48,10 @@ abstract class TaskBase {
     $this->emitted_signals[$type] = $args;
     while(count($this->queues[$type]) > 0) {
       $callback = array_pop($this->queues[$type]);
-      $this->enqueue($callback, $args);
+
+      array_unshift($args, $callback);
+      call_user_func_array([$this, 'enqueue'], $args);
+#      $this->enqueue($callback, $args);
     }
 
     if(in_array($type, ['success', 'failed'])) {
@@ -71,8 +74,11 @@ abstract class TaskBase {
 
 
   protected function registerCallback($type, $callback) {
-    if($this->signalAlreadyEmitted($type))
-      $this->enqueue($callback, $this->emitted_signals[$type]);
+    if($this->signalAlreadyEmitted($type)) {
+      $args = $this->emitted_signals[$type];
+      array_unshift($args, $callback);
+      call_user_func_array([$this, 'enqueue'], $args);
+    }
     else
       if(!isset($this->queues[$type]))
         $this->queues[$type] = [$callback];

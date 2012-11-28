@@ -19,8 +19,9 @@ class TestKademliaFindNode extends UnitTestCase {
     $found_node = KademliaTestFactory::constructNode();
     $task->found_nodes->addNode($found_node);
 
-    $task->perform([['node_list' => new Kademlia\NodeList([$found_node])]]);
-    $task->perform([['node_list' => new Kademlia\NodeList([$found_node])]]);
+    # [ protocol level [ node request level [ response from one node ]]]
+    $task->perform([[['node_list' => new Kademlia\NodeList([$found_node])]]]);
+    $task->perform([[['node_list' => new Kademlia\NodeList([$found_node])]]]);
 
     $callback_done->expectOnce('callme');
     $callback_success->expectNever('callme');
@@ -39,7 +40,7 @@ class TestKademliaFindNode extends UnitTestCase {
     $task->done([$callback_done, 'callme']);
     $task->done([$callback_success, 'callme']);
 
-    $task->perform([['node_list' => new Kademlia\NodeList([$node])]]);
+    $task->perform([[['node_list' => new Kademlia\NodeList([$node])]]]);
 
     $callback_success->expectOnce('callme');
     $callback_done->expectOnce('callme');

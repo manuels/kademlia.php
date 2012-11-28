@@ -5,6 +5,7 @@ namespace Kademlia;
 class Node implements \JsonSerializable {
   function __construct($data, $hard_host = NULL) {
     $this->hard_host = $hard_host; # IP address as found in layer 3 of packets
+    assert(gettype($data) === 'array');
     $this->data = $data;
 
     if(isset($this->data['id'])) {
@@ -144,7 +145,10 @@ class Node implements \JsonSerializable {
   }
 
   public function jsonSerialize() {
-    return json_encode($this->data);
+    $data = $this->data;
+    if(isset($data->protocols[-80]))
+      unset($data->protocols[-80]['all_settings']);
+    return $data;
   }
 }
 

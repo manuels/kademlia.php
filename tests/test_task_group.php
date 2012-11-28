@@ -40,15 +40,33 @@ class TestKademliaTaskGroup extends UnitTestCase {
   public function testSuccessCallbackAfterAllEmit() {
     $res = $this->setupTaskAndCallbacks();
 
+    $callback = function($args) {
+      $this->assertEqual($args, [
+        ['foo', 0],
+        ['foo', 1],
+        ['foo', 2],
+        ['foo', 3],
+        ['foo', 4],
+        ['foo', 5],
+        ['foo', 6],
+        ['foo', 7],
+        ['foo', 8],
+        ['foo', 9]
+      ]);
+    };
+    $res['task_group']->allDone($callback);
+
+    $i = 0;
     foreach($res['tasks'] as &$task) {
-      $task->emit('success', ['foo', 'bar']);
+      $task->emit('success', 'foo', $i);
+      $i++;
     }
     
     $res['task_group']->allDone([$res['callback_all_done'], 'callme']);
     $res['task_group']->allSucceeded([$res['callback_all_succeeded'], 'callme']);
     $res['task_group']->allFailed([$res['callback_all_failed'], 'callme']);
 
-    $res['callback_all_done']->expectOnce('callMe', ['foo', 'bar']);
+    $res['callback_all_done']->expectOnce('callMe', [['foo', 'bar']]);
     $res['callback_all_succeeded']->expectOnce('callMe', ['foo', 'bar']);
     $res['callback_all_failed']->expectNever('callMe');
   }
@@ -69,8 +87,6 @@ class TestKademliaTaskGroup extends UnitTestCase {
     $res['callback_all_succeeded']->expectOnce('callMe', ['foo', 'bar']);
     $res['callback_all_failed']->expectNever('callMe');
   }
-
-
   public function testFailedCallbackAfterAllEmit() {
     $res = $this->setupTaskAndCallbacks();
 

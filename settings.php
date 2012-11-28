@@ -18,7 +18,7 @@ class Settings {
 
   public $value_storage = [];
 
-
+  public $verbosity = 0;
 
   function __construct() {
     $this->kbuckets = new KBuckets($this);

@@ -32,12 +32,13 @@ class TestKademliaNetwork extends UnitTestCase {
   public function testBootstrap() {
     srand(0);
 
-    $count = 3;
+    $count = 5;
     $callback = &new TestCallback();
 
     $node_settings = [];
     for($i = 0; $i < $count; $i++) {
       $settings = $this->generateSettings($node_settings);
+
       if($i > 0) {
         $boot_node = $this->settings2node($node_settings[rand(0, count($node_settings)-1)]);
 
@@ -46,14 +47,16 @@ class TestKademliaNetwork extends UnitTestCase {
         print 'Bootstrap '.$i." done (".Kademlia\Node::binId2hex($settings->own_node_id).")\n";
       }
       else
-        $settings->own_node_id = Kademlia\Node::hexId2bin(str_repeat('00', N/8));
+        $settings->own_node_id = Kademlia\Node::randomNodeId(); #Kademlia\Node::hexId2bin(str_repeat('00', N/8));
       $node_settings[$i] = $settings;
     }
 
 
     foreach($node_settings as $i => $s) {
-      print Kademlia\Node::binId2hex($s->own_node_id).': '. ($s->kbuckets->toNodeList()->size())." ".$s->kbuckets->toNodeList()->toArray()[0]->idStr()."\n";
       print Kademlia\Node::binId2hex($s->own_node_id).': '. ($s->kbuckets->toNodeList()->size())."\n";
+      foreach($s->kbuckets->toNodeList()->toArray() as $n)
+        print $n->idStr()."\n";
+      print "\n";
     }
 
     $callback->expectCallCount('callme', $count-1);
