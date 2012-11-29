@@ -10,7 +10,7 @@ class Bootstrap extends Task {
 
     $this->settings = &$settings;
     $this->bootstrap_nodes = $bootstrap_nodes;
-    if($settings->own_node_id === '')
+    if(strlen($settings->own_node_id) !== N/8)
       $settings->own_node_id = Node::randomNodeId();
   }
 
@@ -57,8 +57,7 @@ class Bootstrap extends Task {
       for($j = 0; $j < 8; $j++) {
         $node_id = $this->settings->own_node_id;
 
-        $byte = $node_id[$i];
-        $byte ^= chr(1 << $j);
+        $byte = $node_id[$i] ^ chr(1 << $j);
         $node_id[$i] = $byte;
 
         $task = new FindNode($this->settings, $node_id);
@@ -66,6 +65,7 @@ class Bootstrap extends Task {
       }
     }
   }
+
 }
 
 ?>

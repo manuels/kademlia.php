@@ -6,26 +6,33 @@ const protocol_id = 80;
 class Protocol extends \Kademlia\Protocol {
   public $protocol_id = protocol_id;
 
-  public function updateKBuckets($request) {
-    $data = [
-      'id' => $request['id'],
-      'protocols' => $request['protocols']
-    ];
-    $node = new \Kademlia\Node($data);
+  public function updateKBuckets($node) {
+    if($this->settings->verbosity >= 4) {
+      print "Updating kbuckets for ".\Kademlia\Node::binId2hex($this->settings->own_node_id)." with ".$node->idStr()."\n";
+      var_dump($node->data);
+    }
 
-    $kbuckets_size = $this->settings->kbuckets->toNodeList()->size();
     $this->settings->kbuckets->nodeOnline($node);
-    $kbuckets_size = $this->settings->kbuckets->toNodeList()->size();
+  }
+
+
+  public function parseSenderNode($request) {
+    $keys = ['id' => '', 'protocols', ''];
+    $data = array_intersect_key($request, $keys);
+
+    $node = new \Kademlia\Node($data);
+    return $node;
   }
 
 
   public function processRequest($request) {
-    $this->updateKBuckets($request);
+    $sender_node = $this->parseSenderNode($request);
+    $this->updateKBuckets($sender_node);
     
     switch($request['query']['type']) {
       case 'FIND_NODE':
         $needle_id = \Kademlia\Node::hexId2bin($request['query']['node_id']);
-        $response = @json_encode($this->createFindNodeResponse($needle_id));
+        $response = @json_encode($this->createFindNodeResponse($needle_id, $sender_node));
         break;
       default:
         $response = '{}';
@@ -146,11 +153,10 @@ class FindNode extends Find {
 
     if($this->settings->verbosity >= 4) {
       print \Kademlia\Node::binId2hex($this->settings->own_node_id).": FindNode process found this result\n";
-      var_dump($emitted_result);
+      var_dump($emitted_result['node_list']);
       print \Kademlia\Node::binId2hex($this->settings->own_node_id).": end of FindNode process result\n";
     }
 
-    $emitted_result[-1] = 'Http::FindNode_result';
     $this->emit('done', $emitted_result);
   }
 }

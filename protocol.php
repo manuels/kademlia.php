@@ -8,8 +8,11 @@ class Protocol {
   }
 
 
-  public function createFindNodeResponse($needle_id) {
+  public function createFindNodeResponse($needle_id, $sender_node) {
     $nodes = $this->settings->kbuckets->toNodeList()->closestNodes($needle_id, $this->settings->bucket_size);
+
+    if($sender_node->isValid())
+      $nodes = $nodes->without(new \Kademlia\NodeList([$sender_node]));
     return $nodes;
   }
 

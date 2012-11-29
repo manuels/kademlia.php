@@ -8,7 +8,7 @@ class Node implements \JsonSerializable {
     assert(gettype($data) === 'array');
     $this->data = $data;
 
-    if(isset($this->data['id'])) {
+    if(isset($this->data['id']) && is_string($this->data['id'])) {
       if(strlen($this->data['id']) === N/8) {
         $this->data['binary_id'] = $data['id'];
       }
@@ -19,6 +19,13 @@ class Node implements \JsonSerializable {
 
     if(!isset($this->data['protocols']))
       $this->data['protocols'] = [];
+    else {
+      if(!is_array($this->data['protocols'])) {
+        var_dump($this->data['protocols']);
+        debug_print_backtrace();
+        assert(false);
+      }
+    }
   }
 
 
@@ -36,6 +43,10 @@ class Node implements \JsonSerializable {
 
 
   public function supportedProtocols() {
+    if(is_int($this->data['protocols'])) {
+      var_dump($this->data['protocols'],'fußbad');
+      debug_print_backtrace();
+    }
     return array_keys($this->data['protocols']);
   }
 
@@ -78,6 +89,9 @@ class Node implements \JsonSerializable {
 
   static function binId2hex($binary_id) {
     $string_id = '';
+    assert(is_string($binary_id));
+    assert(strlen($binary_id) === N/8);
+
     for($i = 0; $i < N/8; $i++) {
       $hex = dechex(ord($binary_id[$i]));
       $string_id .= str_pad( $hex, 2, '0', STR_PAD_LEFT);
@@ -148,6 +162,8 @@ class Node implements \JsonSerializable {
     $data = $this->data;
     if(isset($data->protocols[-80]))
       unset($data->protocols[-80]['all_settings']);
+    unset($data['binary_id']);
+    $data['id'] = $this->idStr();
     return $data;
   }
 }

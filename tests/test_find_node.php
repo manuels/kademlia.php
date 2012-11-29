@@ -8,6 +8,7 @@ class TestKademliaFindNode extends UnitTestCase {
 
   public function testEmitDoneWhenNoNewNodesFound() {
     $settings = new Kademlia\Settings;
+    $settings->own_node_id = Kademlia\Node::randomNodeId();
 
     $callback_done = &new TestCallback;
     $callback_success = &new TestCallback;
@@ -30,6 +31,7 @@ class TestKademliaFindNode extends UnitTestCase {
 
   public function testEmitSuccessWhenNodesFound() {
     $settings = new Kademlia\Settings;
+    $settings->own_node_id = Kademlia\Node::randomNodeId();
 
     $callback_done = &new TestCallback;
     $callback_success = &new TestCallback;

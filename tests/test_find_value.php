@@ -25,8 +25,8 @@ class TestKademliaFindValue extends UnitTestCase {
 
 
   public function testEmitSuccessWhenValueFound() {
-
     $settings = new Kademlia\Settings;
+    $settings->own_node_id = Kademlia\Node::randomNodeId();
 
     $callback_done = &new TestCallback;
     $callback_success = &new TestCallback;
@@ -45,9 +45,6 @@ class TestKademliaFindValue extends UnitTestCase {
 
 
   public function testCallsFindValueForNodes() {
-    print "Skipping FindValue tests...\n";
-    return;
-
     $mock_protocol = &new MockProtocol();
     $mock_task = &new MockTask();
     $mock_settings = &new MockSettings();

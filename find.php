@@ -53,12 +53,24 @@ abstract class Find extends Task {
   }
 
 
+  public function mergeValues($results) {
+    $new_values = [];
+    foreach($results as $protocol_results) {
+      foreach($protocol_results as $node_result) {
+        if(isset($node_result['values']))
+          $new_values = array_merge($new_values, $node_result['values']);
+      }
+    }
+    return $new_values;
+  }
+
+
   public function perform($results = NULL) {
     $needle_id = $this->needle_id;
 
     if($this->settings->verbosity >= 2) {
       print Node::binId2hex($this->settings->own_node_id).": FindNode got these results\n";
-      print_r($results);
+      var_dump($results[0]);
       print Node::binId2hex($this->settings->own_node_id).": end of FindNode results\n";
     }
 
@@ -69,37 +81,16 @@ abstract class Find extends Task {
     else {
       # merge subresults
       $node_list = $this->mergeNodeLists($results);
+      $new_values = $this->mergeValues($results);
 
-      $new_values = [];
-      foreach($results as $protocol_results) {
-        foreach($protocol_results as $node_result) {
-          if(isset($node_result['values']))
-            $new_values = array_merge($new_values, $node_result['values']);
-        }
-      }
+      if($this->settings->verbosity > 1)
+        foreach($node_list->toArray() as $n)
+          print Node::binId2hex($this->settings->own_node_id)." <- ".$n->idStr()."\n";
+
       $this->settings->kbuckets->nodeListOnline($node_list);
       $this->found_nodes->addNodeList($node_list);
 
-      assert(get_class($node_list) === 'Kademlia\NodeList');
-      if($this->found_nodes->size() === 0) {
-        $this->previous_distance = $this->min_distance;
-      }
-
-      if($this->found_nodes->size() > 0) {
-        $this->previous_distance = $this->min_distance;
-        $closest_node = $this->found_nodes->closestNodes($needle_id, 1)->toArray()[0];
-
-        #print_r($closest_node);
-
-        $this->min_distance = $closest_node->distanceTo($needle_id);
-        if(!is_string($this->min_distance)) {
-          print Node::binId2hex($needle_id)." ".$needle_id." ".gettype($needle_id)."\n";
-          print Node::binId2hex($this->min_distance)." ".$this->min_distance." ".gettype($this->min_distance)."\n";
-          assert(false);
-        }
-      }
-      assert(is_string($this->min_distance));
-      assert(is_string($this->previous_distance));
+      $this->updateDistance($needle_id, $this->found_nodes);
 
       array_merge($this->values, $new_values);
       if($this->idFound($node_list, $new_values)) {
@@ -110,6 +101,11 @@ abstract class Find extends Task {
     $query_count = ($this->hop === 0 ? $this->settings->alpha : $this->settings->bucket_size);
 
     $unasked_nodes = $node_list->without($this->asked_nodes);
+    if($unasked_nodes->size() === 0) {
+      $this->emit('done', $this->asked_nodes);
+      return;
+    }
+
     $closest_nodes = $unasked_nodes->closestNodes($needle_id, $query_count);
 
     $this->hop++;
@@ -117,6 +113,19 @@ abstract class Find extends Task {
 
     $requests = $closest_nodes->sendFindRequest($this->type, $this->settings, $needle_id);
     $requests->enqueue()->allDone([$this, 'perform']);
+  }
+
+
+  public function updateDistance($needle_id, $nodes) {
+    $this->previous_distance = $this->min_distance;
+    if($nodes->size() > 0) {
+      $closest_node = $nodes->closestNodes($needle_id, 1)->toArray()[0];
+      $this->min_distance = $closest_node->distanceTo($needle_id);
+    }
+
+    #print Node::binId2hex($this->settings->own_node_id).': Distances new:'.Node::binId2hex($this->min_distance).' old:'.Node::binId2hex($this->previous_distance)."\n";
+    assert(is_string($this->min_distance));
+    assert(is_string($this->previous_distance));
   }
 }
 
