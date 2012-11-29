@@ -20,6 +20,11 @@ class Settings {
 
   public $verbosity = 0;
 
+  public $max_expire = 43200; # 12h in seconds
+
+  public $max_store = 4096; # max value for one key in bytes
+
+
   function __construct() {
     $this->kbuckets = new KBuckets($this);
   }

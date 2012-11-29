@@ -18,9 +18,13 @@ class Protocol extends \Kademlia\Protocol {
 
   public function parseSenderNode($request) {
     $keys = ['id' => '', 'protocols', ''];
-    $data = array_intersect_key($request, $keys);
+    $data = [
+      'id' => $request['id'],
+      'protocols' => $request['protocols']
+    ];
 
     $node = new \Kademlia\Node($data);
+    assert(count($node->data['protocols']) > 0);
     return $node;
   }
 
@@ -33,6 +37,16 @@ class Protocol extends \Kademlia\Protocol {
       case 'FIND_NODE':
         $needle_id = \Kademlia\Node::hexId2bin($request['query']['node_id']);
         $response = @json_encode($this->createFindNodeResponse($needle_id, $sender_node));
+        break;
+      case 'FIND_VALUE':
+        $key_id = \Kademlia\Node::hexId2bin($request['query']['key_id']);
+        $response = @json_encode($this->createFindValueResponse($key_id, $sender_node));
+        break;
+      case 'STORE':
+        $key_id = \Kademlia\Node::hexId2bin($request['query']['key_id']);
+        $value = base64_decode($request['query']['value']);
+        $expire = $request['query']['expire'];
+        $response = @json_encode($this->createStoreResponse($sender_node, $key_id, $value, $expire));
         break;
       default:
         $response = '{}';
@@ -124,6 +138,13 @@ class Find extends HttpTask {
     $nodes = [];
     foreach($result['node_array'] as $data) {
       $n = new \Kademlia\Node($data);
+      assert(count($data['protocols']) > 0);
+
+      if(count($n->data['protocols']) === 0) {
+        print_r($result['node_array']);
+        assert(false);
+      }
+
       if($n->isValid())
         array_push($nodes, $n);
     }

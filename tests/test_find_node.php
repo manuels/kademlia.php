@@ -54,6 +54,7 @@ class TestKademliaFindNode extends UnitTestCase {
     $mock_task = &new MockTask();
     $mock_settings = &new MockSettings();
 
+    $mock_settings->own_node_id = Kademlia\Node::randomNodeId();
     $mock_settings->returns('instantiateProtocolById', $mock_protocol);
     $mock_protocol->setReturnValue('sendFindRequest', $mock_task);
 

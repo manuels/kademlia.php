@@ -7,7 +7,7 @@ class TestKademliaProtocol extends UnitTestCase {
 
 
   public function testFindNodeResponse() {
-    return; #####################################
+    return; #########################################
     $zeros = str_repeat('00', N/8);
     $FFs = str_repeat('FF', N/8);
 
@@ -36,7 +36,8 @@ class TestKademliaProtocol extends UnitTestCase {
       }
     }
 
-    $response = $protocol->createFindResponse($zeros);
+    $sender = new Kademlia\Node(['id' => $zeros]);
+    $response = $protocol->createFindNodeResponse($zeros, $sender);
 
     $expected_ids = [
       "0000000000000000000000000000000000001213",
@@ -62,7 +63,7 @@ class TestKademliaProtocol extends UnitTestCase {
     ];
 
     $getId = function($node) { return $node->idStr(); };
-    $node_ids = array_map($getId, $response['nodes']->toArray());
+    $node_ids = array_map($getId, $response->toArray());
 
     $this->assertEqual($node_ids, $expected_ids);
   }
