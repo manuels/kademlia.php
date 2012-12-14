@@ -64,11 +64,11 @@ class Protocol {
     $this->removeExpiredValues();
 
     $limit = $this->settings->value_storage_limit;
-    if($this->settings->valueStorageSize() > $limit)
-    $this->settings->value_storage[$key_id][$sender_node->idBin()] = [
-      'value' => $value,
-      'expire' => $expire+time()
-    ];
+    if($this->settings->valueStorageSize() <= $limit)
+      $this->settings->value_storage[$key_id][$sender_node->idBin()] = [
+        'value' => $value,
+        'expire' => $expire+time()
+      ];
   }
 
 

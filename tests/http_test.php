@@ -45,10 +45,11 @@ else {
       $kad->store($key, $_REQUEST['value'], 60*60);
       break;
     case 'find':
-      $printIt = function($arg) { var_dump('FindValue: success', $arg); };
+      $on_success = function($arg) { var_dump('FindValue: success', $arg); };
+      $on_done = function($arg) { var_dump('FindValue: done', $arg); };
 
       $key = hash('ripemd160', $_REQUEST['key'], true);
-      $task = $kad->findValue($key)->success($printIt);
+      $task = $kad->findValue($key)->success($on_success)->done($on_done);
       break;
     default:
       echo $kad->processRequest(80, $_REQUEST);
