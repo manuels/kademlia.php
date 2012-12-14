@@ -162,6 +162,10 @@ class Node implements \JsonSerializable {
     $data = $this->data;
     if(isset($data->protocols[-80]))
       unset($data->protocols[-80]['all_settings']);
+    if(isset($data->protocols["-80"]))
+      unset($data->protocols["-80"]['all_settings']);
+
+    unset($data['value_storage']);
     unset($data['binary_id']);
     $data['id'] = $this->idStr();
     return $data;

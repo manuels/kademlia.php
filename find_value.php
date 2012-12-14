@@ -4,6 +4,7 @@ namespace Kademlia;
 
 class FindValue extends Find {
   public $type = Find::VALUE;
+  public $value_count = 1;
 
   public function initiateCaching() {
     # TODO: caching is currently not implemented
@@ -18,15 +19,16 @@ class FindValue extends Find {
 
 
   public function idFound($node_list, $new_values) {
-    if(count($new_values) > 0) {
-      $this->emit('success', $this->values);
+    if(count($new_values) >= $this->value_count) {
+      $this->values = $new_values;
+      $this->emit('success', $this->values, $this->asked_nodes);
       $this->initiateCaching();
       return true;
     }
 
     $unasked_nodes = $node_list->without($this->asked_nodes);
     if($unasked_nodes->size() === 0) {
-      $this->emit('done', $this->asked_nodes);
+      $this->emit('done', $this->values, $this->asked_nodes);
       return true;
     }
 

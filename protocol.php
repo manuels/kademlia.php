@@ -9,11 +9,17 @@ class Protocol {
 
 
   public function createFindNodeResponse($needle_id, $sender_node) {
-    $nodes = $this->settings->kbuckets->toNodeList()->closestNodes($needle_id, $this->settings->bucket_size);
+    $nodes = $this->settings->kbuckets->toNodeList();
+    $self = new Node([
+      'id' => $this->settings->own_node_id,
+      'protocols' => $this->settings->supported_protocols,
+    ]);
+    $nodes->addNode($self);
 
     if($sender_node->isValid())
       $nodes = $nodes->without(new \Kademlia\NodeList([$sender_node]));
-    return $nodes;
+
+    return ['nodes' => $nodes->closestNodes($needle_id, $this->settings->bucket_size)];
   }
 
 
@@ -26,10 +32,10 @@ class Protocol {
         array_push($found_values, $value['value']);
     }
 
-    if(count($found_values) > 0)
-      return ['values' => $found_values];
+    $result = $this->createFindNodeResponse($key_id, $sender_node);
+    $result['values'] = $found_values;
 
-    return $this->createFindNodeResponse($key_id, $sender_node);
+    return $result;
   }
 
 
@@ -57,12 +63,12 @@ class Protocol {
 
     $this->removeExpiredValues();
 
+    $limit = $this->settings->value_storage_limit;
+    if($this->settings->valueStorageSize() > $limit)
     $this->settings->value_storage[$key_id][$sender_node->idBin()] = [
       'value' => $value,
       'expire' => $expire+time()
     ];
-
-    return [];
   }
 
 
@@ -89,6 +95,26 @@ class Protocol {
 
     $type_str = ($type === \Kademlia\Find::NODE ? 'Node' : 'Value');
     $reflect = new \ReflectionClass('Kademlia\\'.$ns.'\\Find'.$type_str);
+    $instance = $reflect->newInstanceArgs($args);
+
+    return $instance;
+  }
+
+
+  public function sendStoreRequest($key_id, $value, $expire, $recipients_node_list) {
+    $ns = $this->settings->protocolNamespace($this->protocol_id);
+
+    $args = [
+      &$this->settings,
+      $key_id,
+      $value,
+      $expire,
+      $recipients_node_list
+    ];
+
+    assert($ns !== '');
+
+    $reflect = new \ReflectionClass('Kademlia\\'.$ns.'\\Store');
     $instance = $reflect->newInstanceArgs($args);
 
     return $instance;

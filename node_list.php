@@ -2,7 +2,7 @@
 
 namespace Kademlia;
 
-class NodeList {
+class NodeList implements \JsonSerializable {
   function __construct($node_array = []) {
     $this->node_array = $node_array;
   }
@@ -117,14 +117,14 @@ class NodeList {
   }
 
 
-  public function sendStoreRequest($settings, $key_id, $value) {
+  public function sendStoreRequest($settings, $key_id, $value, $expire) {
     $protocol_groups = $this->groupByProtocols($settings);
     unset($protocol_groups['']);
 
     $task_group = new TaskGroup($settings);
-    foreach($protocol_groups as $prot_id => $nodes) {
+    foreach($protocol_groups as $prot_id => $node_list) {
       $protocol = &$settings->instantiateProtocolById($prot_id);
-      $task = $protocol->sendStoreRequest($key_id, $value);
+      $task = $protocol->sendStoreRequest($key_id, $value, $expire, $node_list);
       $task_group->add($task);
     }
     return $task_group;
@@ -150,6 +150,11 @@ class NodeList {
     $nodes = array_slice($this->node_array, 0, $count);
 
     return new NodeList($nodes);
+  }
+
+
+  public function jsonSerialize() {
+    return $this->node_array;
   }
 }
 

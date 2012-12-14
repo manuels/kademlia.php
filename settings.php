@@ -2,7 +2,7 @@
 
 namespace Kademlia;
 
-class Settings {
+class Settings implements \JsonSerializable {
   public $own_node_id = '';
 
   public $queue_system = 'sync';
@@ -17,6 +17,8 @@ class Settings {
   public $kbuckets;
 
   public $value_storage = [];
+
+  public $value_storage_limit = 52428800; // 50 MB
 
   public $verbosity = 0;
 
@@ -54,6 +56,71 @@ class Settings {
     $instance = $reflect->newInstanceArgs([&$this]);
 
     return $instance;
+  }
+
+
+  public function fromJson($json) {
+    $data = json_decode($json, true);
+    assert($data !== NULL);
+
+    $this->own_node_id = Node::hexId2bin($data['own_node_id']);
+    foreach($data['kbuckets'] as $node_data) {
+      $node = new Node($node_data);
+      $this->kbuckets->nodeOnline($node);
+    }
+    if(isset($data['supported_protocols']))
+      $this->supported_protocols = $data['supported_protocols'];
+
+    if(isset($data['value_storage'])) {
+      $values = [];
+      foreach($data['value_storage'] as $hex1 => $array) {
+        $key1 = Node::hexId2bin($hex1);
+        $values[$key1] = [];
+        foreach($array as $hex2 => $data) {
+          $key2 = Node::hexId2bin($hex2);
+          $values[$key1][$key2] = [
+            'value' => base64_decode($data['value']),
+            'expire' => $data['expire'],
+          ];
+        }
+      }
+      $this->value_storage = $values;
+    }
+  }
+
+
+  public function jsonSerialize() {
+    $values = [];
+    foreach($this->value_storage as $bin1 => $array) {
+      $key1 = Node::binId2hex($bin1);
+      $values[$key1] = [];
+      foreach($array as $bin2 => $data) {
+        $key2 = Node::binId2hex($bin2);
+        $values[$key1][$key2] = [
+          'value' => base64_encode($data['value']),
+          'expire' => $data['expire'],
+        ];
+      }
+    }
+
+    $data = [
+      'kbuckets'      => $this->kbuckets->toNodeList()->toArray(),
+      'own_node_id'   => Node::binId2hex($this->own_node_id),
+      'value_storage' => $values,
+      'supported_protocols' => $this->supported_protocols,
+    ];
+    return $data;
+  }
+
+
+  public function valueStorageSize() {
+    $size = 0;
+    foreach($this->value_storage as $value_id => $values) {
+      foreach($values as $node_id => $pair) {
+        $size += $pair['value'];
+      }
+    }
+    return $size;
   }
 }
 

@@ -53,8 +53,9 @@ class Bootstrap extends Task {
 
 
   public function fillBuckets() {
-    for($i = 0; $i < N/8; $i++) {
-      for($j = 0; $j < 8; $j++) {
+    for($i = 0; $i < N/8; $i+=4) {
+        $j = 0;
+#      for($j = 0; $j < 8; $j++) {
         $node_id = $this->settings->own_node_id;
 
         $byte = $node_id[$i] ^ chr(1 << $j);
@@ -62,7 +63,7 @@ class Bootstrap extends Task {
 
         $task = new FindNode($this->settings, $node_id);
         $task->enqueue();
-      }
+#      }
     }
   }
 

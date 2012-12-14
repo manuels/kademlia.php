@@ -26,4 +26,6 @@ require('store.php');
 
 require('bootstrap.php');
 
+require('instance.php');
+
 ?>

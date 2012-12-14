@@ -34,6 +34,10 @@ function mock_download(&$settings, $urls) {
 
     parse_str($u, $vars);
     $request = json_decode($vars['q'], true);
+    if($request === NULL) {
+      echo $vars['q']."\n";
+      assert(false);
+    }
     $res = $remote_protocol->processRequest($request);
 
     $results[$u] = [
@@ -46,7 +50,23 @@ function mock_download(&$settings, $urls) {
 }
 
 
+
 class FindNode extends \Kademlia\Http\FindNode {
+  public function download($urls) {
+    return mock_download($this->settings, $urls);
+  }
+}
+
+
+class FindValue extends \Kademlia\Http\FindValue {
+  public function download($urls) {
+    return mock_download($this->settings, $urls);
+  }
+}
+
+
+
+class Store extends \Kademlia\Http\Store {
   public function download($urls) {
     return mock_download($this->settings, $urls);
   }

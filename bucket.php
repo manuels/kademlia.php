@@ -57,6 +57,14 @@ class Bucket implements \JsonSerializable {
   }
 
 
+  public function removeNode($node) {
+    $pos = $this->positionOfNodeId($node->idBin());
+    if($pos !== FALSE)
+      unset($this->nodes[$pos]);
+    return $pos;
+  }
+
+
   public function positionOfNodeId($needle_node) {
     if(is_string($needle_node))
       $needle_node = (new Node(['id' => $needle_node]));

@@ -57,8 +57,9 @@ abstract class Find extends Task {
     $new_values = [];
     foreach($results as $protocol_results) {
       foreach($protocol_results as $node_result) {
-        if(isset($node_result['values']))
-          $new_values = array_merge($new_values, $node_result['values']);
+        if(isset($node_result['values']) && is_array($node_result['values'])) {
+          $new_values = array_unique(array_merge($new_values, $node_result['values']));
+        }
       }
     }
     return $new_values;

@@ -15,6 +15,19 @@ class KBuckets implements \JsonSerializable {
   }
 
 
+  public function nodeOffline($node) {
+    $bucket_id = $node->logDistanceTo($this->settings->own_node_id)-1;
+    if($bucket_id < 0)
+      return;
+
+    if($this->buckets[$bucket_id] === NULL)
+      return;
+
+    $res = $this->buckets[$bucket_id]->removeNode($node);
+    return $res;
+  }
+
+
   public function nodeOnline($node) {
     if(empty($this->settings->own_node_id))
       return;

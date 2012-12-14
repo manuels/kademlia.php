@@ -29,12 +29,11 @@ class TestKademliaNetwork extends UnitTestCase {
   }
 
 
-  public function testBootstrap() {
+  public function testBootstrap($count = 8) {
     #print "skipping testBootstrap\n";
     #return;
     srand(0);
 
-    $count = 10;
     $callback = &new TestCallback();
 
     $node_settings = [];
@@ -69,6 +68,28 @@ class TestKademliaNetwork extends UnitTestCase {
     return $node_settings;
   }
 
+
+  public function testStoreAndFindValue() {
+    $callback = &new TestCallback();
+    $node_settings = $this->testBootstrap(5);
+
+    # store from node 0
+    $key_id = Kademlia\Node::randomNodeId();
+    $value = 'foobar';
+    $expire = 10;
+    $task = new Kademlia\Store($node_settings[0], $key_id, $value, $expire);
+    $task->enqueue()->success([$callback, 'callme']);
+    $callback->expectCallCount('callme', 1);
+
+    # find_value from node 4
+    $cb = function($values) {
+      $this->assertEqual($values, ['foobar']);
+    };
+
+    $task = new Kademlia\FindValue($node_settings[4], $key_id);
+    $task->enqueue()->success([$callback, 'callme'])->success($cb);
+    $callback->expectCallCount('callme', 1);
+  }
 }
 
 ?>

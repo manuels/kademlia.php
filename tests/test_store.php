@@ -26,10 +26,10 @@ class TestKademliaStore extends UnitTestCase {
     $this->assertEqual(count($settings->value_storage), 2);
 
     $response = $protocol->createFindValueResponse($key_id_B, $sender_node);
-    $this->assertEqual($response, ['values' => ['foobar', 'barfoo']]);
+    $this->assertEqual($response['values'], ['foobar', 'barfoo']);
 
     $response = $protocol->createFindValueResponse($key_id_A, $sender_node);
-    $this->assertEqual($response, ['values' => ['foobar']]);
+    $this->assertEqual($response['values'], ['foobar']);
   }
 }
 
